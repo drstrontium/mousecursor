@@ -9,6 +9,8 @@
         margin: 0;
         overflow: hidden;
         font-family: Arial, sans-serif;
+        background-color: #fff; /* Set initial background color */
+        transition: background-color 0.5s ease; /* Smooth transition for background color change */
     }
     #cat {
         position: absolute;
@@ -28,30 +30,239 @@
     p {
         color: #666;
     }
+    .falling-ball {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        animation: fall 4s linear infinite; /* Adjust the animation duration as needed */
+    }
+    .red-ball {
+        background-color: red;
+    }
+    .purple-ball {
+        background-color: purple;
+    }
+    .game-over {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 40px;
+    }
+    @keyframes fall {
+        0% { top: -20px; } /* Start from above the viewport */
+        100% { top: 100vh; } /* Fall to the bottom of the viewport */
+    }
+    /* CSS for immunity message */
+    #immunityMessage {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 255, 0.5);
+        padding: 10px 20px;
+        border-radius: 10px;
+        color: white;
+        font-size: 20px;
+        font-weight: bold;
+        animation: fadeInOut 1s ease-out;
+        display: none;
+    }
+
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+    }
+
+    /* CSS for instructions */
+    #instructions {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+        padding: 20px;
+        border-radius: 10px;
+        color: #333; /* Changed font color to dark gray */
+        font-size: 18px;
+        width: 60%; /* Adjust the width of the instructions box */
+        border: 2px solid #333; /* Add border */
+    }
+
+    /* CSS for start button */
+    #startButton {
+        position: absolute;
+        top: 80%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    /* CSS for glow effect */
+    .glow {
+        animation: glowEffect 0.5s alternate infinite;
+    }
+
+    @keyframes glowEffect {
+        from { filter: drop-shadow(0 0 0 yellow); }
+        to { filter: drop-shadow(0 0 15px yellow); }
+    }
 </style>
 </head>
 <body>
 <div class="container">
-    <h1>You Can't Escape It</h1>
+    <h1>Keep Pharaoh Alive</h1>
     <p>Try your best.</p>
+    <p id="timer">Time elapsed: <span id="time">0</span> seconds</p>
     <img id="cat" src="https://atlas-content-cdn.pixelsquid.com/stock-images/dark-solid-color-sphynx-cat-L81no15-600.jpg" alt="Cat">
 </div>
+<div class="game-over" id="gameOverMessage"></div>
+<!-- Particle Effects for Power-Ups -->
+<div id="powerUpParticles"></div>
+<!-- Message for Immunity -->
+<div class="immunity-message" id="immunityMessage"></div>
+<!-- Instructions -->
+<div id="instructions">
+    <p>Welcome Chat.</p>
+    <p>Your objective is to avoid the red balls falling from the top of the screen.</p>
+    <p>Move the mouse cursor to control Pharoah and dodge the red balls.</p>
+    <p>Collect purple power-up balls to become immune to red balls for 5 seconds.</p>
+    <p>Click the "Start" button to begin the game.</p>
+</div>
+<!-- Start Button -->
+<button id="startButton">Start</button>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         var cat = document.getElementById("cat");
+        var timerElement = document.getElementById("time");
+        var startTime;
+        var timerInterval;
+        var immuneTime = 0; // Duration of immunity after getting a power-up
+        var isImmune = false; // Flag to track if the player is immune to red balls
 
-        document.addEventListener("mousemove", function(e) {
-            // Set a delay of 200 milliseconds before updating the position
+        // Function to start the game
+        function startGame() {
+            document.getElementById("instructions").style.display = "none"; // Hide instructions
+            document.getElementById("startButton").style.display = "none"; // Hide start button
+            startTimer(); // Start the timer
+            // Add event listener for mouse movement to control the cat avatar
+            document.addEventListener("mousemove", updateCatPosition);
+            // Create falling balls at regular intervals
+            setInterval(createRandomRedBalls, 2000); // Adjust the interval as needed
+            // Create power-up balls at regular intervals
+            setInterval(createPowerUpBall, 10000); // Generate a power-up ball every 10 seconds
+        }
+
+        // Function to create falling balls
+        function createFallingBall(className) {
+            var ball = document.createElement("div");
+            ball.classList.add("falling-ball", className);
+            var randomPosition = Math.random() * window.innerWidth;
+            ball.style.left = randomPosition + "px";
+            document.body.appendChild(ball);
+
+            // Add event listener for collision with mouse cursor
+            ball.addEventListener("mouseover", function() {
+                if (!isImmune && ball.classList.contains("red-ball")) {
+                    document.body.style.backgroundColor = "blue";
+                    endGame();
+                }
+            });
+
+            // Randomize the animation duration for more natural falling speed
+            var animationDuration = Math.random() * 2 + 3; // Random duration between 3 and 5 seconds
+            ball.style.animationDuration = animationDuration + "s";
+        }
+
+        // Function to create a purple power-up ball
+        function createPowerUpBall() {
+            var powerUpBall = document.createElement("div");
+            powerUpBall.classList.add("falling-ball", "purple-ball");
+            var randomPosition = Math.random() * window.innerWidth;
+            powerUpBall.style.left = randomPosition + "px";
+            document.body.appendChild(powerUpBall);
+
+            // Add event listener for collision with mouse cursor
+            powerUpBall.addEventListener("mouseover", function() {
+                powerUpEffect();
+                document.body.removeChild(powerUpBall); // Remove the power-up ball after collision
+            });
+        }
+
+        // Function to activate power-up effect
+        function powerUpEffect() {
+            immuneTime = 5; // Set immunity duration to 5 seconds
+            isImmune = true; // Set the player as immune to red balls
+            var powerUpParticles = document.getElementById("powerUpParticles");
+            powerUpParticles.innerHTML = '<div class="power-up-particle" style="top:' + (cat.offsetTop + 50) + 'px; left:' + (cat.offsetLeft + 50) + 'px;"></div>';
+
+            // Display immunity message
+            var immunityMessage = document.getElementById("immunityMessage");
+            immunityMessage.textContent = "Immune for 5 Seconds!";
+            immunityMessage.style.display = "block";
+            immunityMessage.classList.add("glow"); // Add glow effect
+            // Flash cursor or cat image yellow
+            document.body.style.cursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\"><circle cx=\"8\" cy=\"8\" r=\"8\"/></svg>') 8 8, auto";
+            cat.style.filter = "drop-shadow(0 0 15px yellow)"; // Apply drop shadow
             setTimeout(function() {
-                // Calculate the position of the cat
-                var x = e.clientX - cat.offsetWidth / 2;
-                var y = e.clientY - cat.offsetHeight / 2;
+                isImmune = false; // Turn off immunity after the specified duration
+                powerUpParticles.innerHTML = ''; // Clear the power-up particles
+                immunityMessage.textContent = ''; // Clear the immunity message
+                immunityMessage.classList.remove("glow"); // Remove glow effect
+                immunityMessage.style.display = "none"; // Hide the immunity message
+                // Reset cursor and cat image
+                document.body.style.cursor = "default";
+                cat.style.filter = "none";
+            }, immuneTime * 1000);
+        }
 
-                // Set the position of the cat
-                cat.style.left = x + "px";
-                cat.style.top = y + "px";
-            }, 200);
-        });
+        // Function to create random number of red balls
+        function createRandomRedBalls() {
+            var numberOfBalls = Math.floor(Math.random() * 5) + 1; // Random number between 1 and 5
+            for (var i = 0; i < numberOfBalls; i++) {
+                createFallingBall("red-ball");
+            }
+        }
+
+        // Function to update cat position
+        function updateCatPosition(event) {
+            var x = event.clientX - cat.offsetWidth / 2;
+            var y = event.clientY - cat.offsetHeight / 2;
+            cat.style.left = x + "px";
+            cat.style.top = y + "px";
+        }
+
+        // Update the timer display
+        function updateTimer() {
+            var elapsedTime = Math.floor((Date.now() - startTime) / 1000); // Calculate elapsed time in seconds
+            timerElement.textContent = elapsedTime;
+        }
+
+        // Start the timer
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000); // Update the timer every second
+        }
+
+        // Function to end the game
+        function endGame() {
+            clearInterval(timerInterval); // Stop the timer
+            var gameOverMessage = document.getElementById("gameOverMessage");
+            gameOverMessage.textContent = "GAME OVER";
+        }
+
+        // Add event listener for start button click
+        document.getElementById("startButton").addEventListener("click", startGame);
     });
 </script>
 </body>
