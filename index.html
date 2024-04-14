@@ -176,8 +176,8 @@
             ball.style.left = randomPosition + "px";
             document.body.appendChild(ball);
 
-            // Add event listener for collision with mouse cursor
-            ball.addEventListener("mouseover", function() {
+            // Add event listener for collision with mouse cursor or touch event
+            ball.addEventListener(isTouchDevice ? "touchstart" : "mouseover", function() {
                 if (!isImmune && ball.classList.contains("red-ball")) {
                     document.body.style.backgroundColor = "blue";
                     endGame();
@@ -197,8 +197,8 @@
             powerUpBall.style.left = randomPosition + "px";
             document.body.appendChild(powerUpBall);
 
-            // Add event listener for collision with mouse cursor
-            powerUpBall.addEventListener("mouseover", function() {
+            // Add event listener for collision with mouse cursor or touch event
+            powerUpBall.addEventListener(isTouchDevice ? "touchstart" : "mouseover", function() {
                 powerUpEffect();
                 document.body.removeChild(powerUpBall); // Remove the power-up ball after collision
             });
