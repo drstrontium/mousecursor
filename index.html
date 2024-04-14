@@ -134,7 +134,7 @@
 <div id="instructions">
     <p>Welcome Chat.</p>
     <p>Your objective is to avoid the red balls falling from the top of the screen.</p>
-    <p>Move the mouse cursor to control Pharoah and dodge the red balls.</p>
+    <p>Move the mouse cursor or drag your finger to control Pharoah and dodge the red balls.</p>
     <p>Collect purple power-up balls to become immune to red balls for 5 seconds.</p>
     <p>Click the "Start" button to begin the game.</p>
 </div>
@@ -149,14 +149,19 @@
         var timerInterval;
         var immuneTime = 0; // Duration of immunity after getting a power-up
         var isImmune = false; // Flag to track if the player is immune to red balls
+        var isTouchDevice = 'ontouchstart' in window;
 
         // Function to start the game
         function startGame() {
             document.getElementById("instructions").style.display = "none"; // Hide instructions
             document.getElementById("startButton").style.display = "none"; // Hide start button
             startTimer(); // Start the timer
-            // Add event listener for mouse movement to control the cat avatar
-            document.addEventListener("mousemove", updateCatPosition);
+            // Add event listener for mouse movement or touch events to control the cat avatar
+            if (isTouchDevice) {
+                document.addEventListener("touchmove", updateCatPosition);
+            } else {
+                document.addEventListener("mousemove", updateCatPosition);
+            }
             // Create falling balls at regular intervals
             setInterval(createRandomRedBalls, 2000); // Adjust the interval as needed
             // Create power-up balls at regular intervals
@@ -236,8 +241,15 @@
 
         // Function to update cat position
         function updateCatPosition(event) {
-            var x = event.clientX - cat.offsetWidth / 2;
-            var y = event.clientY - cat.offsetHeight / 2;
+            var x, y;
+            if (isTouchDevice) {
+                event.preventDefault(); // Prevent scrolling
+                x = event.touches[0].clientX - cat.offsetWidth / 2;
+                y = event.touches[0].clientY - cat.offsetHeight / 2;
+            } else {
+                x = event.clientX - cat.offsetWidth / 2;
+                y = event.clientY - cat.offsetHeight / 2;
+            }
             cat.style.left = x + "px";
             cat.style.top = y + "px";
         }
